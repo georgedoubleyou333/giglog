@@ -1,0 +1,429 @@
+
+
+<!DOCTYPE html>
+
+<html lang="de">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<meta name="theme-color" content="#101722">
+
+<title>GigLog</title>
+
+<style>
+
+*{box-sizing:border-box}
+
+body{margin:0;background:#101722;color:#f3f6fa;font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding-bottom:90px}
+
+header{padding:22px;background:#182331;border-bottom:1px solid #304052;display:flex;justify-content:space-between;align-items:center}
+
+h1{font-size:25px;margin:0}h2{font-size:21px}
+
+header small{color:#7dd3c7;letter-spacing:2px}
+
+main{padding:20px;max-width:600px;margin:auto}
+
+nav{position:fixed;bottom:0;left:0;right:0;background:#182331;display:flex;justify-content:space-around;padding:13px 5px;z-index:3;border-top:1px solid #304052}
+
+nav button{background:none;color:#91a0b1;padding:8px 5px;font-size:12px}
+
+nav button.active{color:#7dd3c7}
+
+button{border:0;border-radius:12px;padding:12px;background:#7dd3c7;color:#10232b;font-weight:bold;font-size:14px}
+
+input,textarea{width:100%;padding:13px;margin:7px 0 14px;background:#202e3e;border:1px solid #39495a;border-radius:10px;color:white;font-size:16px}
+
+label{display:block;color:#b8c5d2;font-size:13px}
+
+.card{background:#182331;border:1px solid #304052;border-radius:15px;padding:16px;margin:10px 0}
+
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+
+.muted{color:#91a0b1;font-size:13px}
+
+.big{font-size:30px;font-weight:bold;color:#7dd3c7}
+
+.primary{width:100%;margin:12px 0}
+
+.secondary{background:#304052;color:white}
+
+.danger{background:#542f39;color:#ffc1c1}
+
+.view{display:none}.view.active{display:block}
+
+.item{padding:13px 0;border-bottom:1px solid #304052}
+
+.item:last-child{border:0}
+
+.hidden{display:none}
+
+dialog{background:#182331;color:white;border:1px solid #405064;border-radius:18px;width:90%;max-width:440px}
+
+dialog::backdrop{background:#000b}
+
+dialog form{padding:12px}
+
+.actions{display:flex;gap:8px;margin-top:12px}
+
+.actions button{flex:1}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<div><h1>♫ GigLog</h1><small>DEIN AUFTRITTSARCHIV</small></div>
+
+<button onclick="backup()">↓ Backup</button>
+
+</header>
+
+<main>
+
+<section id="home" class="view active">
+
+<p class="muted">DEIN MUSIK-JOURNAL</p>
+
+<h2>Übersicht</h2>
+
+<div class="row">
+
+<div class="card" style="flex:1"><div class="big" id="countG">0</div><div class="muted">Auftritte</div></div>
+
+<div class="card" style="flex:1"><div class="big" id="countS">0</div><div class="muted">Verschiedene Stücke</div></div>
+
+</div>
+
+<div class="card"><div class="big" id="countP">0</div><div class="muted">Gespielte Stück-Vorkommen</div></div>
+
+<h3>Letzte Auftritte</h3>
+
+<div id="recent"></div>
+
+<button class="primary" onclick="newGig()">＋ Auftritt erfassen</button>
+
+</section>
+
+<section id="gigs" class="view">
+
+<h2>Auftritte</h2>
+
+<button class="primary" onclick="newGig()">＋ Neuer Auftritt</button>
+
+<div id="gigList"></div>
+
+</section>
+
+<section id="songs" class="view">
+
+<h2>Musikarchiv</h2>
+
+<input id="search" placeholder="Titel oder Interpret suchen..." oninput="render()">
+
+<div id="songList"></div>
+
+</section>
+
+<section id="stats" class="view">
+
+<h2>Statistik</h2>
+
+<div class="card"><div class="big" id="statG">0</div><div class="muted">Auftritte insgesamt</div></div>
+
+<div class="card"><div class="big" id="statS">0</div><div class="muted">Unterschiedliche Musikstücke</div></div>
+
+<h3>Meistgespielte Stücke</h3><div id="ranking"></div>
+
+<h3>Auftritte pro Jahr</h3><div id="years"></div>
+
+</section>
+
+</main>
+
+<nav>
+
+<button class="active" onclick="show('home',this)">⌂ Start</button>
+
+<button onclick="show('gigs',this)">▣ Auftritte</button>
+
+<button onclick="newGig()">＋ Neu</button>
+
+<button onclick="show('songs',this)">♫ Stücke</button>
+
+<button onclick="show('stats',this)">▥ Statistik</button>
+
+</nav>
+
+<dialog id="gigDialog">
+
+<form onsubmit="saveGig(event)">
+
+<h2>Auftritt erfassen</h2>
+
+<input type="hidden" id="gid">
+
+<label>Veranstaltung</label><input id="gtitle" required placeholder="Sommerkonzert">
+
+<label>Datum</label><input id="gdate" type="date" required>
+
+<label>Ort</label><input id="glocation" placeholder="Grafenegg">
+
+<label>Notiz (optional)</label><textarea id="gnote"></textarea>
+
+<div class="actions"><button type="button" class="secondary" onclick="gigDialog.close()">Abbrechen</button><button>Speichern</button></div>
+
+</form>
+
+</dialog>
+
+<dialog id="detailDialog">
+
+<div style="padding:12px">
+
+<div class="row"><h2 id="detailTitle"></h2><button class="secondary" onclick="detailDialog.close()">×</button></div>
+
+<p class="muted" id="detailMeta"></p>
+
+<div class="row"><h3>Gespielte Stücke</h3><button onclick="newSong()">＋ Stück</button></div>
+
+<div id="detailSongs"></div>
+
+<div class="actions">
+
+<button class="secondary" onclick="editGig()">Bearbeiten</button>
+
+<button class="danger" onclick="deleteGig()">Löschen</button>
+
+</div>
+
+</div>
+
+</dialog>
+
+<dialog id="songDialog">
+
+<form onsubmit="saveSong(event)">
+
+<h2>Stück hinzufügen</h2>
+
+<label>Titel</label><input id="stitle" required placeholder="Titel des Stücks">
+
+<label>Interpret / Band</label><input id="sartist" placeholder="z.B. Toto">
+
+<div class="actions"><button type="button" class="secondary" onclick="songDialog.close()">Abbrechen</button><button>Hinzufügen</button></div>
+
+</form>
+
+</dialog>
+
+<script>
+
+let gigs=JSON.parse(localStorage.getItem('gl_gigs')||'[]');
+
+let songs=JSON.parse(localStorage.getItem('gl_songs')||'[]');
+
+let links=JSON.parse(localStorage.getItem('gl_links')||'[]');
+
+let current=null;
+
+const $=id=>document.getElementById(id);
+
+function persist(){
+
+localStorage.setItem('gl_gigs',JSON.stringify(gigs));
+
+localStorage.setItem('gl_songs',JSON.stringify(songs));
+
+localStorage.setItem('gl_links',JSON.stringify(links));
+
+}
+
+function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
+
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+function show(name,btn){
+
+document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+
+$(name).classList.add('active');
+
+document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+
+if(btn)btn.classList.add('active');
+
+render();
+
+}
+
+function newGig(){
+
+$('gid').value='';$('gtitle').value='';
+
+$('gdate').value=new Date().toISOString().slice(0,10);
+
+$('glocation').value='';$('gnote').value='';
+
+gigDialog.showModal();
+
+}
+
+function saveGig(e){
+
+e.preventDefault();
+
+let idv=$('gid').value||id();
+
+let old=gigs.find(g=>g.id===idv);
+
+let g={id:idv,title:$('gtitle').value.trim(),date:$('gdate').value,location:$('glocation').value.trim(),note:$('gnote').value.trim()};
+
+if(old)Object.assign(old,g);else gigs.push(g);
+
+persist();gigDialog.close();render();
+
+if(old)openGig(idv);
+
+}
+
+function openGig(idv){
+
+current=idv;let g=gigs.find(x=>x.id===idv);if(!g)return;
+
+$('detailTitle').textContent=g.title;
+
+$('detailMeta').textContent=g.date+' · '+g.location;
+
+let items=links.filter(l=>l.gig===idv).map(l=>({l,s:songs.find(s=>s.id===l.song)})).filter(x=>x.s);
+
+$('detailSongs').innerHTML=items.length?items.map(x=>`<div class="item row"><div><b>${esc(x.s.title)}</b><div class="muted">${esc(x.s.artist)}</div></div><button class="danger" onclick="removeSong('${x.l.id}')">×</button></div>`).join(''):'<p class="muted">Noch keine Stücke erfasst.</p>';
+
+detailDialog.showModal();
+
+}
+
+function editGig(){
+
+let g=gigs.find(x=>x.id===current);if(!g)return;
+
+detailDialog.close();$('gid').value=g.id;$('gtitle').value=g.title;$('gdate').value=g.date;$('glocation').value=g.location;$('gnote').value=g.note||'';gigDialog.showModal();
+
+}
+
+function deleteGig(){
+
+if(!confirm('Diesen Auftritt wirklich löschen?'))return;
+
+gigs=gigs.filter(g=>g.id!==current);links=links.filter(l=>l.gig!==current);
+
+persist();detailDialog.close();render();
+
+}
+
+function newSong(){
+
+$('stitle').value='';$('sartist').value='';songDialog.showModal();
+
+}
+
+function saveSong(e){
+
+e.preventDefault();
+
+let title=$('stitle').value.trim(),artist=$('sartist').value.trim();
+
+let s=songs.find(x=>x.title.toLowerCase()===title.toLowerCase()&&(x.artist||'').toLowerCase()===artist.toLowerCase());
+
+if(!s){s={id:id(),title,artist};songs.push(s)}
+
+if(!links.some(l=>l.gig===current&&l.song===s.id))links.push({id:id(),gig:current,song:s.id});
+
+persist();songDialog.close();openGig(current);render();
+
+}
+
+function removeSong(lid){
+
+links=links.filter(l=>l.id!==lid);persist();openGig(current);render();
+
+}
+
+function render(){
+
+let sorted=[...gigs].sort((a,b)=>b.date.localeCompare(a.date));
+
+$('countG').textContent=$('statG').textContent=gigs.length;
+
+$('countS').textContent=$('statS').textContent=songs.length;
+
+$('countP').textContent=links.length;
+
+$('recent').innerHTML=sorted.slice(0,4).map(g=>gigCard(g)).join('')||'<p class="muted">Noch keine Auftritte.</p>';
+
+$('gigList').innerHTML=sorted.map(g=>gigCard(g)).join('')||'<p class="muted">Noch keine Auftritte.</p>';
+
+let q=$('search').value.toLowerCase();
+
+$('songList').innerHTML=[...songs].filter(s=>(s.title+' '+s.artist).toLowerCase().includes(q)).sort((a,b)=>a.title.localeCompare(b.title)).map(s=>{
+
+let n=links.filter(l=>l.song===s.id).length;
+
+return `<div class="card"><b>${esc(s.title)}</b><div class="muted">${esc(s.artist)} · ${n}× gespielt</div><button class="secondary" onclick="historySong('${s.id}')">Historie</button></div>`;
+
+}).join('')||'<p class="muted">Noch keine Stücke.</p>';
+
+let counts=songs.map(s=>({...s,n:links.filter(l=>l.song===s.id).length})).filter(s=>s.n).sort((a,b)=>b.n-a.n);
+
+$('ranking').innerHTML=counts.slice(0,10).map(s=>`<div class="item row"><span>${esc(s.title)} <small class="muted">${esc(s.artist)}</small></span><b>${s.n}×</b></div>`).join('')||'<p class="muted">Noch keine Daten.</p>';
+
+let ys={};gigs.forEach(g=>{let y=g.date.slice(0,4);ys[y]=(ys[y]||0)+1});
+
+$('years').innerHTML=Object.keys(ys).sort().reverse().map(y=>`<div class="item row">${y}<b>${ys[y]} Auftritte</b></div>`).join('')||'<p class="muted">Noch keine Daten.</p>';
+
+}
+
+function gigCard(g){
+
+let n=links.filter(l=>l.gig===g.id).length;
+
+return `<div class="card" onclick="openGig('${g.id}')"><b>${esc(g.title)}</b><div class="muted">${esc(g.date)} · ${esc(g.location)}</div><div class="muted">${n} Stücke</div></div>`;
+
+}
+
+function historySong(sid){
+
+let s=songs.find(x=>x.id===sid);
+
+let h=links.filter(l=>l.song===sid).map(l=>gigs.find(g=>g.id===l.gig)).filter(Boolean).sort((a,b)=>b.date.localeCompare(a.date));
+
+alert(s.title+' – '+s.artist+'\n\n'+h.map(g=>g.date+' · '+g.title+' · '+g.location).join('\n'));
+
+}
+
+function backup(){
+
+let data={app:'GigLog',gigs,songs,links};
+
+let a=document.createElement('a');
+
+a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+
+a.download='giglog-backup.json';a.click();
+
+}
+
+render();
+
+</script>
+
+</body>
+
+</html>
